@@ -5,13 +5,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
-// Validación de Zod corregida
-const EsquemaReserva = z.object({
-    nombre: z.string().min(1, "El nombre es obligatorio."),
-    correo: z.string().email("El correo no es válido."),
-    fecha: z.string().min(1, "La fecha es obligatoria."),
-    servicioId: z.coerce.number().min(1, "Debe seleccionar un servicio."),
-});
 export type EstadoFormulario = {
     errores?: {
         nombre?: string[];
@@ -21,6 +14,13 @@ export type EstadoFormulario = {
     };
     mensaje?: string;
 } | null | undefined;
+
+const EsquemaReserva = z.object({
+    nombre: z.string().min(1, "El nombre es obligatorio."),
+    correo: z.string().email("El correo no es válido."),
+    fecha: z.string().min(1, "La fecha es obligatoria."),
+    servicioId: z.coerce.number().min(1, "Debe seleccionar un servicio."),
+});
 
 export async function crearReserva(prevState: EstadoFormulario, formData: FormData) {
     const validacion = EsquemaReserva.safeParse({
@@ -38,7 +38,6 @@ export async function crearReserva(prevState: EstadoFormulario, formData: FormDa
     const nuevaFechaInicio = new Date(data.fecha);
 
     try {
-        // --- EJERCICIO 1: VALIDACIÓN DE DISPONIBILIDAD (Considerando duración) ---
         const servicio = await prisma.servicio.findUnique({
             where: { id: data.servicioId }
         });
@@ -47,10 +46,8 @@ export async function crearReserva(prevState: EstadoFormulario, formData: FormDa
             return { errores: { servicioId: ["El servicio no existe."] } };
         }
 
-        // Calculamos a qué hora termina la nueva cita (duración en minutos * 60000 ms)
         const nuevaFechaFin = new Date(nuevaFechaInicio.getTime() + servicio.duracion * 60000);
 
-        // Traemos las reservas activas
         const reservasActivas = await prisma.reserva.findMany({
             where: {
                 servicioId: data.servicioId,
@@ -59,7 +56,6 @@ export async function crearReserva(prevState: EstadoFormulario, formData: FormDa
             include: { servicio: true }
         });
 
-        // Verificamos si los tiempos chocan
         const hayConflicto = reservasActivas.some((reserva) => {
             const inicioExistente = new Date(reserva.fecha);
             const finExistente = new Date(inicioExistente.getTime() + reserva.servicio.duracion * 60000);
@@ -68,29 +64,32 @@ export async function crearReserva(prevState: EstadoFormulario, formData: FormDa
         });
 
         if (hayConflicto) {
-            return { errores: { fecha: ["El horario choca con otra reserva."] } };
+            return { errores: { fecha: ["El horario choca con otra reserva existente."] } };
         }
 
-        // --- CREACIÓN ---
-        // Aquí usamos "nombre" y "correo" exactamente como están en tu schema.prisma
+        // ¡AQUÍ ESTÁ LA MAGIA! Conectamos tu formulario con los nombres reales de tu base de datos
         await prisma.reserva.create({
             data: {
-                nombre: data.nombre,
-                correo: data.correo,
+                clienteNombre: data.nombre, // Le damos a Prisma el 'clienteNombre' que exige
+                clienteEmail: data.correo,  // Le damos a Prisma el 'clienteEmail' que exige
                 fecha: nuevaFechaInicio,
                 servicioId: data.servicioId,
                 estado: "pendiente"
             },
         });
+
     } catch (error) {
-        return { mensaje: "Error interno al crear la reserva." };
+        if (error instanceof Error) {
+            return { mensaje: "EL ERROR EXACTO ES: " + error.message };
+        }
+        return { mensaje: "Ocurrió un error desconocido." };
     }
 
     revalidatePath("/reservas");
     redirect("/reservas");
 }
 
-// --- EJERCICIO 2: CANCELAR (Soft Delete) ---
+// --- EJERCICIO 2: CANCELAR ---
 export async function cancelarReserva(id: number) {
     try {
         await prisma.reserva.update({

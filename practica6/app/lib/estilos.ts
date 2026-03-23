@@ -1,37 +1,6 @@
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { BotonEliminarServicio } from "./boton-eliminar";
-import { tarjeta } from "@/app/lib/estilos";
-
-export default async function PaginaServicios() {
-    const servicios = await prisma.servicio.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { _count: { select: { reservas: true } } },
-    });
-
-    return (
-        <div>
-        <div className= "flex items-center justify-between mb-6" >
-        <h1 className="text-xl font-semibold" > Servicios </h1>
-            < Link href = "/servicios/nuevo" className = "bg-black text-white px-4 py-2 rounded text-sm" >
-                Agregar servicio
-                    </Link>
-                    </div>
-                    < ul className = 'space-y-3' >
-                    {
-                        servicios.map((servicio) => (
-                            <li key= { servicio.id } className = {`${tarjeta} flex items-center justify-between`} >
-                        <div>
-                        <p className='font-medium text-sm' > { servicio.nombre } </p>
-                            < p className = 'text-xs text-gray-400' >
-                                { servicio.duracion } min | { servicio._count.reservas } reserva(s)
-                                    </p>
-                                    </div>
-                                    < BotonEliminarServicio id = { servicio.id } />
-                                        </li>
-        ))
-}
-</ul>
-    </div>
-  );
-}
+export const tarjeta = "border border-gray-200 rounded-lg p-4 bg-white";
+export const input = "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-black";
+export const label = "block text-sm font-medium mb-1 text-gray-700";
+export const botonPrimario = "bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 transition-colors w-full";
+export const botonSecundario = "bg-gray-200 text-black px-4 py-2 rounded text-sm hover:bg-gray-300 transition-colors w-full";
+export const botonPeligro = "bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors";

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { BotonEliminarReserva } from "./boton-eliminar";
+import { BotonConfirmarReserva } from "./boton-confirmar";
 import { tarjeta } from "@/app/lib/estilos";
 
 const etiquetaEstado: Record<string, string> = {
@@ -34,11 +35,12 @@ export default async function PaginaReservas() {
                     {reservas.map((reserva) => (
                         <li
                             key={reserva.id}
-                            className={`${tarjeta} flex items-start justify-between`}
+                            className={`${tarjeta} flex items-center justify-between`}
                         >
                             <div>
-                                <p className="font-medium text-sm">{reserva.nombre}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{reserva.correo}</p>
+                                { }
+                                <p className="font-medium text-sm">{reserva.clienteNombre}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{reserva.clienteEmail}</p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     {reserva.servicio.nombre} -{" "}
                                     {new Date(reserva.fecha).toLocaleString("es-SV")}
@@ -50,7 +52,17 @@ export default async function PaginaReservas() {
                                     {reserva.estado}
                                 </span>
                             </div>
-                            <BotonEliminarReserva id={reserva.id} />
+
+                            { }
+                            <div className="flex gap-2">
+                                {reserva.estado === "pendiente" && (
+                                    <BotonConfirmarReserva id={reserva.id} />
+                                )}
+
+                                {reserva.estado !== "cancelada" && (
+                                    <BotonEliminarReserva id={reserva.id} />
+                                )}
+                            </div>
                         </li>
                     ))}
                 </ul>
