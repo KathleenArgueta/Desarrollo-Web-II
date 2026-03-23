@@ -55,4 +55,11 @@ export async function eliminarReserva(id: number) {
     } catch {
         return { exito: false, mensaje: "No se pudo eliminar la reserva." };
     }
+    export async function cambiarEstadoReserva(id: number, nuevoEstado: string) {
+        await prisma.reserva.update({
+            where: { id },
+            data: { estado: nuevoEstado },
+        });
+        revalidatePath('/reservas');
+    }
 }
